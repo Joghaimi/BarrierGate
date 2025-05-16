@@ -17,7 +17,7 @@ namespace Lib
             {
                 if (!DeviceCom.IsOpen)
                 {
-                    DeviceCom.PortName = "/dev/ttyS0";// comName.ToString();
+                    DeviceCom.PortName = "/dev/ttyUSB0";// comName.ToString();
                     DeviceCom.BaudRate = 19200;
                     DeviceCom.Parity = Parity.None;
                     DeviceCom.DataBits = 8;
