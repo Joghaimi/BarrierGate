@@ -11,7 +11,7 @@ while (true)
     if (gpioController.Read(17))
     {
         Console.WriteLine("Button pressed");
-        if (gate.IsGateOpen())
+        if (!gate.IsGateOpen())
         {
             gate.OpenTheGate();
 
