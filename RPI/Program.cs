@@ -7,7 +7,7 @@ var gpioController = new GPIOController();
 gpioController.Setup(17, PinMode.InputPullUp);
 while (true)
 {
-    if (!gpioController.Read(17))
+    if (gpioController.Read(17))
     {
         Console.WriteLine("Button pressed");
       
