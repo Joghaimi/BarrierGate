@@ -13,10 +13,7 @@ while (true)
       
         gate.OpenTheGate();
     }
-    else
-    {
-        Console.WriteLine("Button not pressed");
-    }
+  
 
     //gate.OpenTheGate();
     //Thread.Sleep(1000);
