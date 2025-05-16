@@ -10,7 +10,7 @@ namespace Services
 {
     public class AppDbContext : DbContext
     {
-        public DbSet<GateTransaction> Products => Set<GateTransaction>();
+        public DbSet<GateTransaction> GateTransactions => Set<GateTransaction>();
 
         protected override void OnConfiguring(DbContextOptionsBuilder options)
             => options.UseSqlite("Data Source=gate.db");

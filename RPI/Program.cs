@@ -9,6 +9,14 @@ gate.ConnectToTheGate(SerialPorts.Serial0);
 var gpioController = new GPIOController();
 gpioController.Setup(17, PinMode.InputPullUp);
 gpioController.Setup(27, PinMode.InputPullUp);
+
+if (gate.IsGateOpen())
+{
+    Console.WriteLine("Gate is open");
+    gate.ControlGate(GateAction.Close, 0x01);
+}
+
+
 while (true)
 {
     if (gpioController.Read(17))
