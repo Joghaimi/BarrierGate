@@ -1,25 +1,44 @@
 ﻿using Lib;
+using Services;
 using System.Device.Gpio;
 Console.WriteLine("Ready ...    ");
+using var db = new AppDbContext();
 
 var gate = new BarrierGateHelper();
 gate.ConnectToTheGate(SerialPorts.Serial0);
 var gpioController = new GPIOController();
 gpioController.Setup(17, PinMode.InputPullUp);
+gpioController.Setup(27, PinMode.InputPullUp);
 while (true)
 {
     if (gpioController.Read(17))
     {
-        Console.WriteLine("Button pressed");
+        // 
+        var newGateTransaction = new GateTransaction
+        {
+            Date = DateTime.Now,
+            isSent = false,
+        };
+
+        db.Add(newGateTransaction);
+        db.SaveChanges();
+        gate.OpenTheGate();
+        Thread.Sleep(500);
         if (!gate.IsGateOpen())
         {
+            Console.WriteLine("Gate is open");
             gate.OpenTheGate();
-
         }
-        else
+        Console.WriteLine("waitting");
+        while (gpioController.Read(27))
         {
-            gate.ControlGate(GateAction.Close, 0x01);
+            Console.Write(".");
+            // Wait for the button to be released
+            Thread.Sleep(10);
         }
+        Console.WriteLine();
+        gate.ControlGate(GateAction.Close, 0x01);
+
     }
 
 
