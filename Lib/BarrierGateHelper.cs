@@ -68,7 +68,7 @@ namespace Lib
 
             return false; // Failed or invalid response
         }
-        public bool? IsGateOpen(byte address = 0x01)
+        public bool IsGateOpen(byte address = 0x01)
         {
             // Command: fd 00 <address> 00 fd fa
             byte[] command = new byte[] { 0xFD, 0x00, address, 0x00, 0xFD, 0xFA };
@@ -108,7 +108,7 @@ namespace Lib
                 Console.WriteLine("Error checking gate status: " + ex.Message);
             }
 
-            return null; // Failed or unknown state
+            return false; // Failed or unknown state
         }
 
         public string GetGateStatus(byte address = 0x01)
