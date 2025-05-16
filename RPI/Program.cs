@@ -1,5 +1,6 @@
 ﻿using Lib;
 using System.Device.Gpio;
+Console.WriteLine("Ready ...    ");
 
 var gate = new BarrierGateHelper();
 gate.ConnectToTheGate(SerialPorts.Serial0);
@@ -17,7 +18,7 @@ while (true)
         }
         else
         {
-            gate.ControlGate(GateAction.Close);
+            gate.ControlGate(GateAction.Close, 0x01);
         }
     }
 
