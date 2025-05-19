@@ -21,7 +21,7 @@ while (true)
 {
     if (gpioController.Read(17))
     {
-        // 
+        Console.WriteLine("Button is Pressed");
         var newGateTransaction = new GateTransaction
         {
             Date = DateTime.Now,
