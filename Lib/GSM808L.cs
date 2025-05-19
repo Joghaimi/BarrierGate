@@ -14,6 +14,7 @@ namespace Lib
 
         public GSM808L(string portName, int baudRate = 115200)
         {
+            
             DeviceCom = new SerialPort(portName, baudRate)
             {
                 NewLine = "\r\n",
@@ -39,19 +40,20 @@ namespace Lib
             catch { /* Handle errors if needed */ }
         }
 
-        private void SendCommand(string command)
+        public void SendCommand(string command)
         {
             _responseBuffer.Clear();
             DeviceCom.Write(command + "\r");
         }
 
-        private async Task<string> WaitForResponseAsync(string expected, int timeoutMs = 10000)
+        public async Task<string> WaitForResponseAsync(string expected, int timeoutMs = 10000)
         {
             int waited = 0;
             while (waited < timeoutMs)
             {
                 lock (_responseBuffer)
                 {
+                    Console.WriteLine($"Waiting for: {_responseBuffer.ToString()}");
                     if (_responseBuffer.ToString().Contains(expected))
                     {
                         return _responseBuffer.ToString();

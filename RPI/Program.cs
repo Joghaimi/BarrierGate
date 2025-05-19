@@ -10,6 +10,16 @@ var gpioController = new GPIOController();
 gpioController.Setup(17, PinMode.InputPullUp);
 gpioController.Setup(27, PinMode.InputPullUp);
 
+
+
+// Test GSM ---
+
+var gsm = new GSM808L("/dev/ttyS0");
+
+gsm.SendCommand("AT");
+gsm.WaitForResponseAsync("OK").Wait();
+
+return;
 if (gate.IsGateOpen())
 {
     Console.WriteLine("Gate is open");
