@@ -17,7 +17,7 @@ namespace Lib
             {
                 if (!DeviceCom.IsOpen)
                 {
-                    DeviceCom.PortName = "/dev/ttyUSB0";// comName.ToString();
+                    DeviceCom.PortName = "/dev/ttyS0";// comName.ToString();
                     DeviceCom.BaudRate = 19200;
                     DeviceCom.Parity = Parity.None;
                     DeviceCom.DataBits = 8;
@@ -34,40 +34,122 @@ namespace Lib
             }
         }
 
-        public bool OpenTheGate(byte address = 0x01)
+        //public bool OpenTheGate(byte address = 0x01)
+        //{
+        //    byte[] command = new byte[] { 0xFD, 0x00, address, 0x03, 0xFD, 0xFA };
+        //    DeviceCom.Write(command, 0, command.Length);
+        //    Console.WriteLine("Open gate command sent.");
+        //    try
+        //    {
+        //        System.Threading.Thread.Sleep(100);
+        //        int bytesToRead = DeviceCom.BytesToRead;
+        //        if (bytesToRead >= 6)
+        //        {
+        //            byte[] response = new byte[bytesToRead];
+        //            DeviceCom.Read(response, 0, bytesToRead);
+        //            Console.WriteLine("Response: " + BitConverter.ToString(response));
+
+        //            if (response.Length >= 6 &&
+        //                response[0] == 0xFD &&
+        //                response[1] == 0x00 &&
+        //                response[2] == address &&
+        //                response[3] == 0x03 &&
+        //                response[4] == 0xFD &&
+        //                response[5] == 0xFA)
+        //            {
+        //                return true;
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Console.WriteLine("Error reading response: " + ex.Message);
+        //    }
+
+        //    return false; // Failed or invalid response
+        //}
+        public bool OpenTheGate(byte address = 0x01, int timeoutMs = 10000)
         {
             byte[] command = new byte[] { 0xFD, 0x00, address, 0x03, 0xFD, 0xFA };
-            DeviceCom.Write(command, 0, command.Length);
-            Console.WriteLine("Open gate command sent.");
+            Console.WriteLine("📤 Sending open gate command: " + BitConverter.ToString(command));
+
             try
             {
-                System.Threading.Thread.Sleep(100);
-                int bytesToRead = DeviceCom.BytesToRead;
-                if (bytesToRead >= 6)
-                {
-                    byte[] response = new byte[bytesToRead];
-                    DeviceCom.Read(response, 0, bytesToRead);
-                    Console.WriteLine("Response: " + BitConverter.ToString(response));
+                DeviceCom.DiscardInBuffer(); // Clear any old data
+                DeviceCom.Write(command, 0, command.Length);
 
-                    if (response.Length >= 6 &&
-                        response[0] == 0xFD &&
-                        response[1] == 0x00 &&
-                        response[2] == address &&
-                        response[3] == 0x03 &&
-                        response[4] == 0xFD &&
-                        response[5] == 0xFA)
+                var sw = System.Diagnostics.Stopwatch.StartNew();
+                bool gateOpened = false;
+                bool gateClosed = false;
+
+                while (sw.ElapsedMilliseconds < timeoutMs)
+                {
+                    if (DeviceCom.BytesToRead >= 6)
                     {
-                        return true;
+                        byte[] buffer = new byte[DeviceCom.BytesToRead];
+                        DeviceCom.Read(buffer, 0, buffer.Length);
+
+                        Console.WriteLine("📥 Response: " + BitConverter.ToString(buffer));
+
+                        // Find all valid frames in buffer
+                        for (int i = 0; i <= buffer.Length - 6; i++)
+                        {
+                            if (buffer[i] == 0xFD && buffer[i + 4] == 0xFD && buffer[i + 5] == 0xFA)
+                            {
+                                byte cmd = buffer[i + 3];
+
+                                switch (cmd)
+                                {
+                                    case 0x03:
+                                        Console.WriteLine("✅ Gate opened.");
+                                        gateOpened = true;
+                                        break;
+                                    case 0x04:
+                                        Console.WriteLine("✅ Gate fully closed.");
+                                        gateClosed = true;
+                                        break;
+                                    case 0x06:
+                                        Console.WriteLine("🔁 Loop detector triggered.");
+                                        break;
+                                    case 0x07:
+                                        Console.WriteLine("📡 Bearer signal detected.");
+                                        break;
+                                    case 0x05:
+                                        Console.WriteLine("📊 Status update received.");
+                                        break;
+                                    default:
+                                        Console.WriteLine("ℹ️ Unknown command code: 0x" + cmd.ToString("X2"));
+                                        break;
+                                }
+
+                                // Once opened and closed, return success
+                                if (gateOpened && gateClosed)
+                                {
+                                    return true;
+                                }
+
+                                // Skip ahead to avoid re-parsing the same frame
+                                i += 5;
+                            }
+                        }
                     }
+
+                    Thread.Sleep(100); // Prevent tight loop
                 }
+
+                Console.WriteLine("⏱️ Timeout waiting for full open-close cycle.");
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error reading response: " + ex.Message);
+                Console.WriteLine("💥 Error: " + ex.Message);
             }
 
-            return false; // Failed or invalid response
+            return false; // If not opened and closed in time
         }
+
+
+
+
         public bool IsGateOpen(byte address = 0x01)
         {
             // Command: fd 00 <address> 00 fd fa
