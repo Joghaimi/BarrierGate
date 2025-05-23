@@ -11,6 +11,8 @@ namespace Services
 
         public int Id { get; set; }
         public DateTime Date { get; set; }
+        public int numberOfOpenCurrectly { get; set; }
+        public int numberOfOpenIllegel { get; set; }
         public bool isSent { get; set; }
     }
 }

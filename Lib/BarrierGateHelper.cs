@@ -68,8 +68,9 @@ namespace Lib
 
         //    return false; // Failed or invalid response
         //}
-        public bool OpenTheGate(byte address = 0x01, int timeoutMs = 10000)
+        public (bool, int) OpenTheGate(byte address = 0x01, int timeoutMs = 10000)
         {
+            var numberOfOpendByLoopDetector = 0;
             byte[] command = new byte[] { 0xFD, 0x00, address, 0x03, 0xFD, 0xFA };
             Console.WriteLine("📤 Sending open gate command: " + BitConverter.ToString(command));
 
@@ -86,51 +87,25 @@ namespace Lib
                 {
                     if (DeviceCom.BytesToRead >= 6)
                     {
-                        byte[] buffer = new byte[DeviceCom.BytesToRead];
-                        DeviceCom.Read(buffer, 0, buffer.Length);
-
-                        Console.WriteLine("📥 Response: " + BitConverter.ToString(buffer));
-
-                        // Find all valid frames in buffer
-                        for (int i = 0; i <= buffer.Length - 6; i++)
+                        GateSignalStatus doorStatus = ReadSignalStatus();
+                        if (doorStatus == GateSignalStatus.OpenToUpLimit)
                         {
-                            if (buffer[i] == 0xFD && buffer[i + 4] == 0xFD && buffer[i + 5] == 0xFA)
-                            {
-                                byte cmd = buffer[i + 3];
-
-                                switch (cmd)
-                                {
-                                    case 0x03:
-                                        Console.WriteLine("✅ Gate opened.");
-                                        gateOpened = true;
-                                        break;
-                                    case 0x04:
-                                        Console.WriteLine("✅ Gate fully closed.");
-                                        gateClosed = true;
-                                        break;
-                                    case 0x06:
-                                        Console.WriteLine("🔁 Loop detector triggered.");
-                                        break;
-                                    case 0x07:
-                                        Console.WriteLine("📡 Bearer signal detected.");
-                                        break;
-                                    case 0x05:
-                                        Console.WriteLine("📊 Status update received.");
-                                        break;
-                                    default:
-                                        Console.WriteLine("ℹ️ Unknown command code: 0x" + cmd.ToString("X2"));
-                                        break;
-                                }
-
-                                // Once opened and closed, return success
-                                if (gateOpened && gateClosed)
-                                {
-                                    return true;
-                                }
-
-                                // Skip ahead to avoid re-parsing the same frame
-                                i += 5;
-                            }
+                            Console.WriteLine("✅ Gate opened.");
+                            gateOpened = true;
+                        }
+                        else if (doorStatus == GateSignalStatus.CloseToDownLimit)
+                        {
+                            Console.WriteLine("✅ Gate fully closed.");
+                            gateClosed = true;
+                            return (true, numberOfOpendByLoopDetector);
+                        }
+                        else if (doorStatus == GateSignalStatus.OpenByLoopDetector)
+                        {
+                            numberOfOpendByLoopDetector++;
+                        }
+                        else
+                        {
+                            Console.WriteLine($"⚠️ Unknown signal: {doorStatus}");
                         }
                     }
 
@@ -144,7 +119,7 @@ namespace Lib
                 Console.WriteLine("💥 Error: " + ex.Message);
             }
 
-            return false; // If not opened and closed in time
+            return (false, numberOfOpendByLoopDetector); // If not opened and closed in time
         }
 
 
@@ -240,11 +215,13 @@ namespace Lib
             return "Failed to read gate status";
         }
 
-        public string ReadSignalStatus(byte address = 0x01)
+
+
+        public GateSignalStatus ReadSignalStatus(byte address = 0x01)
         {
             try
             {
-                System.Threading.Thread.Sleep(100); // Small delay to ensure data is received
+                Thread.Sleep(100); // Wait briefly to ensure data is received
                 int bytesToRead = DeviceCom.BytesToRead;
 
                 if (bytesToRead >= 6)
@@ -261,34 +238,79 @@ namespace Lib
                     {
                         byte signalCode = response[3];
 
-                        return signalCode switch
+                        if (Enum.IsDefined(typeof(GateSignalStatus), signalCode))
                         {
-                            0x02 => "Stop by remote control",
-                            0x04 => "Open by remote control",
-                            0x06 => "Close by remote control",
-                            0x11 => "Stop by wire control",
-                            0x13 => "Open by wire control",
-                            0x15 => "Close by wire control",
-                            0x16 => "Open by loop detector",
-                            0x17 => "Open by infrared photocell",
-                            0x0A => "Auto-close after vehicle passed",
-                            0x18 => "Delay auto-closing",
-                            0x12 => "Open by auto-reversing on obstruction",
-                            0x14 => "Stop on obstruction",
-                            0xE3 => "Motor sensor not detected",
-                            0xE7 => "Spring tension too high or lifted",
-                            _ => $"Unknown signal code: 0x{signalCode:X2}"
-                        };
+                            return (GateSignalStatus)signalCode;
+                        }
+                        else
+                        {
+                            Console.WriteLine($"⚠ Unknown signal code: 0x{signalCode:X2}");
+                            return GateSignalStatus.Unknown;
+                        }
                     }
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error reading signal: " + ex.Message);
+                Console.WriteLine("💥 Error reading signal: " + ex.Message);
             }
 
-            return "No valid signal received";
+            return GateSignalStatus.Unknown;
         }
+
+
+
+        //public string ReadSignalStatus(byte address = 0x01)
+        //{
+        //    try
+        //    {
+        //        System.Threading.Thread.Sleep(100); // Small delay to ensure data is received
+        //        int bytesToRead = DeviceCom.BytesToRead;
+
+        //        if (bytesToRead >= 6)
+        //        {
+        //            byte[] response = new byte[bytesToRead];
+        //            DeviceCom.Read(response, 0, bytesToRead);
+        //            //Console.WriteLine("Signal received: " + BitConverter.ToString(response));
+
+        //            if (response[0] == 0xFD &&
+        //                response[1] == 0x00 &&
+        //                response[2] == address &&
+        //                response[4] == 0xFD &&
+        //                response[5] == 0xFA)
+        //            {
+        //                byte signalCode = response[3];
+
+        //                return signalCode switch
+        //                {
+        //                    0x02 => "Stop by remote control",
+        //                    0x04 => "Open by remote control",
+        //                    0x06 => "Close by remote control",
+        //                    0x09 => "Open to up limit position",
+        //                    0x11 => "Stop by wire control",
+        //                    0x13 => "Open by wire control",
+        //                    0x15 => "Close by wire control",
+        //                    0x16 => "Open by loop detector",
+        //                    0x17 => "Open by infrared photocell",
+        //                    0x0A => "Auto-close after vehicle passed",
+        //                    0x0C => "Close to down limit position",
+        //                    0x18 => "Delay auto-closing",
+        //                    0x12 => "Open by auto-reversing on obstruction",
+        //                    0x14 => "Stop on obstruction",
+        //                    0xE3 => "Motor sensor not detected",
+        //                    0xE7 => "Spring tension too high or lifted",
+        //                    _ => $"Unknown signal code: 0x{signalCode:X2}"
+        //                };
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Console.WriteLine("Error reading signal: " + ex.Message);
+        //    }
+
+        //    return "No valid signal received";
+        //}
 
 
         public bool ControlGate(GateAction action, byte address = 0x01)

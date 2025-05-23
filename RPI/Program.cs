@@ -40,11 +40,17 @@ static void GateBearerLoop()
             {
                 Date = DateTime.Now,
                 isSent = false,
+                numberOfOpenCurrectly = 1,
+                numberOfOpenIllegel=0
             };
 
+      
+            var gateStatus=gate.OpenTheGate();
+            Console.WriteLine($"Gate Status: {gateStatus.Item1} number of illegel Tries {gateStatus.Item2}");
+            newGateTransaction.numberOfOpenIllegel = gateStatus.Item2;
             db.Add(newGateTransaction);
             db.SaveChanges();
-            gate.OpenTheGate();
+
             //Thread.Sleep(500);
             //if (!gate.IsGateOpen())
             //{
@@ -71,7 +77,7 @@ static async Task DbUpdateToWebsiteLoopAsync()
     var gsm = new GSM808L("/dev/ttyAMA0");
 
     string apn = "zain"; // For Zain Jordan
-    string url = "http://145.223.99.117:5112/api/Gate/Open";
+    string url = "http://145.223.99.117:5112/api/Gate/Open?numberOfIllegelOpenning=";
     int consecutiveFailures = 0;
     while (true)
     {
@@ -86,12 +92,13 @@ static async Task DbUpdateToWebsiteLoopAsync()
 
                 // Call your HTTP GET async method (assume gsm is accessible here)
                 Console.WriteLine($"Start Request ");
+                url =$"http://145.223.99.117:5112/api/Gate/Open?numberOfIllegelOpenning={item.numberOfOpenIllegel}";
                 var success = await gsm.HttpGetAsync("zain", url);
                 Console.WriteLine($"End Request ");
 
                 if (success)
                 {
-                    Console.WriteLine($"{item.Id}Sent transaction {item.Id} successfully.");
+                    Console.WriteLine($"{item.Id} Sent transaction {item.Id} successfully.");
                     item.isSent = true;
                     consecutiveFailures = 0;
                     // Optionally save response if needed: item.Response = response;
