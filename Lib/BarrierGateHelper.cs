@@ -17,18 +17,20 @@ namespace Lib
             {
                 if (!DeviceCom.IsOpen)
                 {
-                    DeviceCom.PortName = "/dev/ttyS0";// comName.ToString();
+                    DeviceCom.PortName = "/dev/ttyUSB0";// comName.ToString();
+
                     DeviceCom.BaudRate = 19200;
                     DeviceCom.Parity = Parity.None;
                     DeviceCom.DataBits = 8;
                     DeviceCom.StopBits = StopBits.One;
                     DeviceCom.Open();
+                    Console.WriteLine("Gate Connected Sucess");
                 }
                 return true;
             }
             catch (Exception e)
             {
-                Debug.WriteLine(e.Message);
+                Console.WriteLine(e.Message);
                 return false;
 
             }
