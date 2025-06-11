@@ -194,6 +194,8 @@ namespace Lib
                 case GateSignalStatus.OpenByLoopDetector:
                     Console.WriteLine("↪️ Gate triggered by loop detector.");
                     transaction.numberOfOpenIllegel++;
+                    transaction.LoopDetector++;
+
                     break;
                 case GateSignalStatus.AutoCloseAfterVehiclePassed:
                     Console.WriteLine("↪️  AutoCloseAfterVehiclePassed");
