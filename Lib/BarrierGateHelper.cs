@@ -196,7 +196,7 @@ namespace Lib
                     transaction.numberOfOpenIllegel++;
                     break;
                 case GateSignalStatus.AutoCloseAfterVehiclePassed:
-                    Console.WriteLine("↪️ Gate triggered by loop detector.");
+                    Console.WriteLine("↪️  AutoCloseAfterVehiclePassed");
                     transaction.LoopDetector++;
                     break;
                 default:
