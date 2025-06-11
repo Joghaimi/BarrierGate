@@ -104,7 +104,6 @@ namespace API.Controllers
                     <td>{row.TotalOpenCurrectly}</td>
                     <td>{row.TotalOpenIllegel}</td>
                     <td>{row.TotalUpperLimit}</td>
-                    <td>{row.TotalLowerLimit}</td>
                     <td>{row.TotalLoopDetector}</td>
                 </tr>";
             }
