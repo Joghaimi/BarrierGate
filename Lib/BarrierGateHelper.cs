@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using Services;
+using System.Diagnostics;
 using System.IO.Ports;
 using System.Net;
 
@@ -70,6 +71,139 @@ namespace Lib
 
         //    return false; // Failed or invalid response
         //}
+
+        //public GateTransaction OpenTheGate(GateTransaction transaction)
+        //{
+        //    var numberOfOpendByLoopDetector = 0;
+        //    byte[] command = new byte[] { 0xFD, 0x00, 0x01, 0x03, 0xFD, 0xFA };
+        //    Console.WriteLine("📤 Sending open gate command: " + BitConverter.ToString(command));
+
+        //    try
+        //    {
+        //        DeviceCom.DiscardInBuffer(); // Clear any old data
+        //        DeviceCom.Write(command, 0, command.Length);
+
+        //        var sw = System.Diagnostics.Stopwatch.StartNew();
+        //        bool gateOpened = false;
+        //        bool gateClosed = false;
+
+        //        while (sw.ElapsedMilliseconds < 10000)
+        //        {
+        //            if (DeviceCom.BytesToRead >= 6)
+        //            {
+        //                GateSignalStatus doorStatus = ReadSignalStatus();
+        //                if (doorStatus == GateSignalStatus.OpenToUpLimit)
+        //                {
+        //                    Console.WriteLine("✅ Gate opened.");
+        //                    transaction.ReachUpperLimitSwitch ++;
+        //                    gateOpened = true;
+        //                }
+        //                else if (doorStatus == GateSignalStatus.CloseToDownLimit)
+        //                {
+        //                    Console.WriteLine("✅ Gate fully closed.");
+        //                    gateClosed = true;
+        //                    transaction.ReachLoweerLimitSwitch++;
+        //                    //return (true, numberOfOpendByLoopDetector);
+        //                    return transaction; // Return the transaction with updated status
+        //                }
+        //                else if (doorStatus == GateSignalStatus.OpenByLoopDetector)
+        //                {
+        //                    transaction.LoopDetector++;
+        //                }
+        //                else
+        //                {
+        //                    Console.WriteLine($"⚠️ Unknown signal: {doorStatus}");
+        //                }
+        //            }
+
+        //            Thread.Sleep(100); // Prevent tight loop
+        //        }
+
+        //        Console.WriteLine("⏱️ Timeout waiting for full open-close cycle.");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Console.WriteLine("💥 Error: " + ex.Message);
+        //    }
+
+        //    return transaction; // If not opened and closed in time
+        //}
+        public GateTransaction OpenTheGate(GateTransaction transaction)
+        {
+            const int timeoutMs = 10000;
+            const int signalLength = 6;
+            byte[] openGateCommand = new byte[] { 0xFD, 0x00, 0x01, 0x03, 0xFD, 0xFA };
+            Console.WriteLine("📤 Sending open gate command: " + BitConverter.ToString(openGateCommand));
+
+            try
+            {
+                SendCommandToDevice(openGateCommand);
+
+                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+                bool gateOpened = false;
+                bool gateClosed = false;
+
+                while (stopwatch.ElapsedMilliseconds < timeoutMs)
+                {
+                    if (DeviceCom.BytesToRead >= signalLength)
+                    {
+                        var doorStatus = ReadSignalStatus();
+                        HandleSignalStatus(doorStatus, transaction, ref gateOpened, ref gateClosed);
+
+                        if (gateClosed)
+                        {
+                            return transaction; // Done successfully
+                        }
+                    }
+
+                    Thread.Sleep(100); // Prevent tight loop
+                }
+
+                Console.WriteLine("⏱️ Timeout waiting for full open-close cycle.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("💥 Error: " + ex.Message);
+            }
+
+            return transaction; // Return whatever progress has been made
+        }
+
+        private void SendCommandToDevice(byte[] command)
+        {
+            DeviceCom.DiscardInBuffer(); // Clear old data
+            DeviceCom.Write(command, 0, command.Length);
+        }
+
+        private void HandleSignalStatus(GateSignalStatus status, GateTransaction transaction, ref bool gateOpened, ref bool gateClosed)
+        {
+            switch (status)
+            {
+                case GateSignalStatus.OpenToUpLimit:
+                    Console.WriteLine("✅ Gate opened.");
+                    transaction.ReachUpperLimitSwitch++;
+                    gateOpened = true;
+                    break;
+
+                case GateSignalStatus.CloseToDownLimit:
+                    Console.WriteLine("✅ Gate fully closed.");
+                    transaction.ReachLowerLimitSwitch++;
+                    gateClosed = true;
+                    break;
+
+                case GateSignalStatus.OpenByLoopDetector:
+                    Console.WriteLine("↪️ Gate triggered by loop detector.");
+                    transaction.LoopDetector++;
+                    break;
+
+                default:
+                    Console.WriteLine($"⚠️ Unknown signal: {status}");
+                    break;
+            }
+        }
+
+
+
         public (bool, int) OpenTheGate(byte address = 0x01, int timeoutMs = 10000)
         {
             var numberOfOpendByLoopDetector = 0;

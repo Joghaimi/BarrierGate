@@ -14,64 +14,165 @@ Task.WaitAll(GateBearerTask, dbUpdateTask);
 
 //string response = await gsm.HttpGetAsync(apn, url);
 
-
-
-
 static void GateBearerLoop()
 {
-    using var db = new AppDbContext();
+    const int buttonPin = 17;
+    const int secondPin = 27;
+
     var gate = new BarrierGateHelper();
-    gate.ConnectToTheGate(SerialPorts.Serial0);
     var gpioController = new GPIOController();
-    gpioController.Setup(17, PinMode.InputPullUp);
-    gpioController.Setup(27, PinMode.InputPullUp);
-    if (gate.IsGateOpen())
-    {
-        Console.WriteLine("Gate is open");
-        gate.ControlGate(GateAction.Close, 0x01);
-    }
+
+    InitializeHardware(gate, gpioController, buttonPin, secondPin);
 
     while (true)
     {
-        if (gpioController.Read(17))
+        if (gpioController.Read(buttonPin))
         {
-            Console.WriteLine("Button is Pressed");
-            var newGateTransaction = new GateTransaction
+            Console.WriteLine($"{DateTime.Now:HH:mm:ss} - 🔘 Button Pressed");
+
+            using var db = new AppDbContext();
+
+            var gateTransaction = new GateTransaction
             {
                 Date = DateTime.Now,
                 isSent = false,
                 numberOfOpenCurrectly = 1,
-                numberOfOpenIllegel=0
+                numberOfOpenIllegel = 0
             };
 
-      
-            var gateStatus=gate.OpenTheGate();
-            Console.WriteLine($"Gate Status: {gateStatus.Item1} number of illegel Tries {gateStatus.Item2}");
-            newGateTransaction.numberOfOpenIllegel = gateStatus.Item2;
-            db.Add(newGateTransaction);
+            var result = gate.OpenTheGate(gateTransaction);
+
+            LogTransaction(result);
+            db.Add(result);
             db.SaveChanges();
 
-            //Thread.Sleep(500);
-            //if (!gate.IsGateOpen())
-            //{
-            //    Console.WriteLine("Gate is open");
-            //    gate.OpenTheGate();
-            //}
-            //Console.WriteLine("waitting");
-            //while (gpioController.Read(27))
-            //{
-            //    Console.Write(".");
-            //    Thread.Sleep(10);
-            //}
-            //Console.WriteLine();
-            //gate.ControlGate(GateAction.Close, 0x01);
+            // Optional: Wait for button release to avoid repeated triggers
+            //WaitForButtonRelease(gpioController, buttonPin);
         }
         else
         {
-            Thread.Sleep(50); // small delay to avoid CPU overuse when button not pressed
+            Thread.Sleep(50); // Reduce CPU usage
         }
     }
 }
+
+static void InitializeHardware(BarrierGateHelper gate, GPIOController gpio, int pin1, int pin2)
+{
+    gate.ConnectToTheGate(SerialPorts.Serial0);
+
+    gpio.Setup(pin1, PinMode.InputPullUp);
+    gpio.Setup(pin2, PinMode.InputPullUp);
+
+    if (gate.IsGateOpen())
+    {
+        Console.WriteLine($"{DateTime.Now:HH:mm:ss} - ⛔ Gate is open. Closing...");
+        gate.ControlGate(GateAction.Close, 0x01);
+    }
+}
+
+static void LogTransaction(GateTransaction transaction)
+{
+    Console.WriteLine($"{DateTime.Now:HH:mm:ss} - ✅ Gate Status Report:");
+    Console.WriteLine($"  - numberOfOpenCurrectly: {transaction.numberOfOpenCurrectly}");
+    Console.WriteLine($"  - numberOfOpenIllegal: {transaction.numberOfOpenIllegel}");
+    Console.WriteLine($"  - LoopDetector: {transaction.LoopDetector}");
+    Console.WriteLine($"  - ReachLowerLimitSwitch: {transaction.ReachLowerLimitSwitch}");
+    Console.WriteLine($"  - ReachUpperLimitSwitch: {transaction.ReachUpperLimitSwitch}");
+}
+
+static void WaitForButtonRelease(GPIOController gpio, int pin)
+{
+    while (gpio.Read(pin))
+    {
+        Thread.Sleep(50); // Wait until button is released
+    }
+}
+
+
+
+//static void GateBearerLoop()
+//{
+//    using var db = new AppDbContext();
+//    var gate = new BarrierGateHelper();
+//    gate.ConnectToTheGate(SerialPorts.Serial0);
+//    var gpioController = new GPIOController();
+//    gpioController.Setup(17, PinMode.InputPullUp);
+//    if (gate.IsGateOpen())
+//    {
+//        Console.WriteLine("Gate is open");
+//        gate.ControlGate(GateAction.Close, 0x01);
+//    }
+//    while (true)
+//    {
+//        if (gpioController.Read(17))
+//        {
+//            Console.WriteLine("Button is Pressed");
+//            var newGateTransaction = new GateTransaction
+//            {
+//                Date = DateTime.Now,
+//                isSent = false,
+//                numberOfOpenCurrectly = 1,
+//                numberOfOpenIllegel = 0
+//            };
+
+
+//            var transaction = gate.OpenTheGate(newGateTransaction);
+//            Console.WriteLine($"Gate Status: {transaction.numberOfOpenCurrectly}" +
+//                $" number of illegel Tries {transaction.numberOfOpenIllegel} " +
+//                $" number of LoopDetector {transaction.LoopDetector} " +
+//                $" number of ReachLowerLimitSwitch {transaction.ReachLowerLimitSwitch}" +
+//                $" number of ReachUpperLimit {transaction.ReachUpperLimitSwitch}"
+//                );
+//            db.Add(newGateTransaction);
+//            db.SaveChanges();
+//        }
+//        else
+//        {
+//            Thread.Sleep(50); // small delay to avoid CPU overuse when button not pressed
+//        }
+//    }
+
+//}
+//while (true)
+//{
+//    if (gpioController.Read(17))
+//    {
+//        Console.WriteLine("Button is Pressed");
+//        var newGateTransaction = new GateTransaction
+//        {
+//            Date = DateTime.Now,
+//            isSent = false,
+//            numberOfOpenCurrectly = 1,
+//            numberOfOpenIllegel = 0
+//        };
+
+
+//        var gateStatus = gate.OpenTheGate();
+//        Console.WriteLine($"Gate Status: {gateStatus.Item1} number of illegel Tries {gateStatus.Item2}");
+//        newGateTransaction.numberOfOpenIllegel = gateStatus.Item2;
+//        db.Add(newGateTransaction);
+//        db.SaveChanges();
+
+//        //Thread.Sleep(500);
+//        //if (!gate.IsGateOpen())
+//        //{
+//        //    Console.WriteLine("Gate is open");
+//        //    gate.OpenTheGate();
+//        //}
+//        //Console.WriteLine("waitting");
+//        //while (gpioController.Read(27))
+//        //{
+//        //    Console.Write(".");
+//        //    Thread.Sleep(10);
+//        //}
+//        //Console.WriteLine();
+//        //gate.ControlGate(GateAction.Close, 0x01);
+//    }
+//    else
+//    {
+//        Thread.Sleep(50); // small delay to avoid CPU overuse when button not pressed
+//    }
+//}
 static async Task DbUpdateToWebsiteLoopAsync()
 {
     var gsm = new GSM808L("/dev/ttyAMA0");
@@ -92,7 +193,16 @@ static async Task DbUpdateToWebsiteLoopAsync()
 
                 // Call your HTTP GET async method (assume gsm is accessible here)
                 Console.WriteLine($"Start Request ");
-                url =$"http://145.223.99.117:5112/api/Gate/Open?numberOfIllegelOpenning={item.numberOfOpenIllegel}";
+
+                url = $"http://145.223.99.117:5112/api/Gate/Update?Id={item.Id}&Date={item.Date:yyyy/MM/dd}" +
+                    $"&numberOfOpenCurrectly={item.numberOfOpenCurrectly}" +
+                    $"&numberOfOpenIllegel={item.numberOfOpenIllegel}" +
+                    $"&ReachUpperLimitSwitch={item.ReachUpperLimitSwitch}" +
+                    $"&ReachLowerLimitSwitch={item.ReachLowerLimitSwitch}" +
+                    $"&LoopDetector={item.LoopDetector}";
+
+
+                //url = $"http://145.223.99.117:5112/api/Gate/Open?numberOfIllegelOpenning={item.numberOfOpenIllegel}";
                 var success = await gsm.HttpGetAsync("zain", url);
                 Console.WriteLine($"End Request ");
 

@@ -11,8 +11,8 @@ using Services;
 namespace Services.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250516171525_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20250611154951_InitialCreate1")]
+    partial class InitialCreate1
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -29,12 +29,27 @@ namespace Services.Migrations
                     b.Property<DateTime>("Date")
                         .HasColumnType("TEXT");
 
+                    b.Property<int>("LoopDetector")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ReachLowerLimitSwitch")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("ReachUpperLimitSwitch")
+                        .HasColumnType("INTEGER");
+
                     b.Property<bool>("isSent")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("numberOfOpenCurrectly")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("numberOfOpenIllegel")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Products");
+                    b.ToTable("GateTransactions");
                 });
 #pragma warning restore 612, 618
         }
