@@ -92,7 +92,7 @@ namespace API.Controllers
                     <th>Paid Door Opens</th>
                     <th>Unpaid Door Opens</th>
                     <th>Reached Upper Limit</th>
-                    <th>Reached Lower Limit</th>
+                 
                     <th>Loop Detector Triggers</th>
                 </tr>";
 
