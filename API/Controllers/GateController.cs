@@ -43,6 +43,16 @@ namespace API.Controllers
             _context.SaveChanges();
             return Ok();
         }
+        [HttpDelete("ClearAll")]
+        public async Task<IActionResult> ClearAll()
+        {
+            // Remove all rows from the table
+            _context.GateTransactions.RemoveRange(_context.GateTransactions);
+
+            await _context.SaveChangesAsync();
+
+            return Ok("All records deleted successfully.");
+        }
 
         [HttpGet("Open")]
         public async Task<IActionResult> Open(int numberOfIllegelOpenning)
