@@ -29,6 +29,14 @@ static void VistaTransactions()
     const int buttonPin = 17;
     var gpioController = new GPIOController();
     gpioController.Setup(buttonPin, PinMode.InputPullUp);
+    var gateActions = new GateActions
+    {
+        Date = DateTime.Now,
+        Actions = GateSignalStatus.VisaTrasnactions,
+        isSent = false
+    };
+    Console.WriteLine($"Visa Transaction ..");
+    DBHundler.AddGateActionsToDB(gateActions);
     while (true)
     {
         if (gpioController.Read(buttonPin))
