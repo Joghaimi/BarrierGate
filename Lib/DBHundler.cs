@@ -13,7 +13,7 @@ namespace Lib
         public static AppDbContext db = new AppDbContext();
         public static void AddGateActionsToDB(GateActions gateAction)
         {
-            db.Add(gateAction);
+            db.GateActions.Add(gateAction);
             db.SaveChanges();
         }
         public static List<GateActions> GetUnsentGateActions()
