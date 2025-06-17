@@ -26,7 +26,7 @@ Task.WaitAll(GateBearerTask, dbUpdateTask);
 
 static void VistaTransactions()
 {
-    const int buttonPin = 17;
+    const int buttonPin = 27;
     var gpioController = new GPIOController();
     gpioController.Setup(buttonPin, PinMode.InputPullUp);
     while (true)
