@@ -40,11 +40,11 @@ static void VistaTransactions()
                 Actions = GateSignalStatus.VisaTrasnactions,
                 isSent = false
             };
+            Console.WriteLine($"Visa Transaction ..");
             DBHundler.AddGateActionsToDB(gateAction);
             while (gpioController.Read(buttonPin))
                 Thread.Sleep(50);
         }
-        Console.WriteLine($"Waiting for button press...{gpioController.Read(buttonPin)}");
         Thread.Sleep(50); // Reduce CPU usage
     }
 }
