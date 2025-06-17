@@ -44,7 +44,7 @@ static void VistaTransactions()
             while (gpioController.Read(buttonPin))
                 Thread.Sleep(50);
         }
-
+        Console.WriteLine($"Waiting for button press...{gpioController.Read(buttonPin)}");
         Thread.Sleep(50); // Reduce CPU usage
     }
 }
