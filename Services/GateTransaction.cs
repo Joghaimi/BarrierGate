@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+//using Lib;
 namespace Services
 {
     public class GateTransaction
@@ -18,4 +18,12 @@ namespace Services
         public int LoopDetector { get; set; }
         public bool isSent { get; set; }
     }
+    //public class GateActions
+    //{
+
+    //    public int Id { get; set; }
+    //    public DateTime Date { get; set; }
+    //    public GateSignalStatus Actions { get; set; }
+    //    public bool isSent { get; set; }
+    //}
 }

@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Lib;
+using Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,6 +18,14 @@ namespace API
         public int ReachUpperLimitSwitch { get; set; }
         public int ReachLowerLimitSwitch { get; set; }
         public int LoopDetector { get; set; }
+        public bool isSent { get; set; }
+    }
+    public class GateActions
+    {
+
+        public int Id { get; set; }
+        public DateTime Date { get; set; }
+        public GateSignalStatus Actions { get; set; }
         public bool isSent { get; set; }
     }
 }

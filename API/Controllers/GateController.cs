@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Models;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace API.Controllers
@@ -16,14 +17,6 @@ namespace API.Controllers
         {
             _context = context;
         }
-
-        //public int Id { get; set; }
-        //public DateTime Date { get; set; }
-        //public int numberOfOpenCurrectly { get; set; }
-        //public int numberOfOpenIllegel { get; set; }
-        //public int ReachUpperLimitSwitch { get; set; }
-        //public int ReachLowerLimitSwitch { get; set; }
-        //public int LoopDetector { get; set; }
         [HttpGet("Update")]
         public async Task<IActionResult> update(int Id, DateTime Date, int numberOfOpenCurrectly, int numberOfOpenIllegel,
              int ReachUpperLimitSwitch, int ReachLowerLimitSwitch, int LoopDetector)
@@ -43,14 +36,26 @@ namespace API.Controllers
             _context.SaveChanges();
             return Ok();
         }
+        [HttpGet("UpdateGateActions")]
+        public async Task<IActionResult> UpdateGateActions(int Id, DateTime Date, GateSignalStatus GateSignalStatus)
+        {
+            var GateActions = new GateActions
+            {
+                Id = Id,
+                Date = Date,
+                Actions = GateSignalStatus,
+                isSent = true // Assuming this is false by default
+            };
+            _context.Add(GateActions);
+            _context.SaveChanges();
+            return Ok();
+        }
         [HttpDelete("ClearAll")]
         public async Task<IActionResult> ClearAll()
         {
             // Remove all rows from the table
             _context.GateTransactions.RemoveRange(_context.GateTransactions);
-
             await _context.SaveChangesAsync();
-
             return Ok("All records deleted successfully.");
         }
 
@@ -116,5 +121,62 @@ namespace API.Controllers
             return Content(html, "text/html");
         }
 
+
+        [HttpGet("daily-signal-summary")]
+        public async Task<IActionResult> GetDailySignalPivot()
+        {
+            var data = await _context.GateActions
+                .ToListAsync();
+
+            // Group by date
+            var groupedByDate = data
+                .GroupBy(g => g.Date.Date)
+                .OrderBy(g => g.Key)
+                .ToList();
+
+            // Get all enum values except Unknown if you want (or keep Unknown)
+            var allStatuses = Enum.GetValues(typeof(GateSignalStatus))
+                .Cast<GateSignalStatus>()
+                .OrderBy(e => (byte)e)
+                .ToList();
+
+            // Build HTML header
+            string html = @"
+    <html>
+        <body>
+            <h2>Gate Signal Summary by Date</h2>
+            <table border='1' cellpadding='5' cellspacing='0'>
+                <tr>
+                    <th>Date</th>";
+
+            // Add a <th> for each status name
+            foreach (var status in allStatuses)
+            {
+                html += $"<th>{status}</th>";
+            }
+
+            html += "</tr>";
+
+            // Add rows per date
+            foreach (var dateGroup in groupedByDate)
+            {
+                html += $"<tr><td>{dateGroup.Key:yyyy-MM-dd}</td>";
+
+                foreach (var status in allStatuses)
+                {
+                    int count = dateGroup.Count(g => g.Actions == status);
+                    html += $"<td>{count}</td>";
+                }
+
+                html += "</tr>";
+            }
+
+            html += @"
+            </table>
+        </body>
+    </html>";
+
+            return Content(html, "text/html");
+        }
     }
 }

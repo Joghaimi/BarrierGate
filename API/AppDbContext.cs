@@ -11,7 +11,7 @@ namespace API
     public class AppDbContextAPI : DbContext
     {
         public DbSet<GateTransaction> GateTransactions => Set<GateTransaction>();
-
+        public DbSet<GateActions> GateActions => Set<GateActions>();
         public AppDbContextAPI(DbContextOptions<AppDbContextAPI> options)
       : base(options)
         {
